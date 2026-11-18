@@ -1,0 +1,50 @@
+name: Build Unsigned IPA
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Download prebuilt language frameworks
+        run: |
+          chmod +x ./downloadFrameworks.sh
+          ./downloadFrameworks.sh
+
+      - name: List available schemes
+        run: xcodebuild -list -project Code.xcodeproj
+
+      - name: Build unsigned iOS app
+        run: |
+          xcodebuild clean build \
+            -project Code.xcodeproj \
+            -scheme CodeApp \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            ONLY_ACTIVE_ARCH=NO
+
+      - name: Package IPA
+        run: |
+          mkdir -p Payload
+          APP_PATH=$(find build/Build/Products/Release-iphoneos -name "*.app" -maxdepth 1 | head -n 1)
+          echo "Found app bundle: $APP_PATH"
+          cp -r "$APP_PATH" Payload/
+          zip -qry CodeApp-Unsigned.ipa Payload
+
+      - name: Upload IPA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CodeApp-Unsigned-IPA
+          path: CodeApp-Unsigned.ipa
