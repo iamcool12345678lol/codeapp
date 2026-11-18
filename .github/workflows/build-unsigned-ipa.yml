@@ -18,14 +18,12 @@ jobs:
           chmod +x ./downloadFrameworks.sh
           ./downloadFrameworks.sh
 
-      - name: List available schemes
-        run: xcodebuild -list -project Code.xcodeproj
-
       - name: Build unsigned iOS app
         run: |
+          xcodebuild -list -project Code.xcodeproj
           xcodebuild clean build \
             -project Code.xcodeproj \
-            -scheme CodeApp \
+            -scheme "Code" \
             -configuration Release \
             -sdk iphoneos \
             -destination 'generic/platform=iOS' \
